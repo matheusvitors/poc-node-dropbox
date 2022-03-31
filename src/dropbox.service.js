@@ -1,6 +1,10 @@
 const fs = require('fs');
 const axios = require('axios');
+const path = require('path');
+const { Dropbox } = require('dropbox');
 const constants = require('./constants');
+
+const dropbox = new Dropbox({accessToken: process.env.DROPBOX_ACCESS_TOKEN});
 
 module.exports = { 
 
@@ -10,7 +14,7 @@ module.exports = {
                 "Authorization": 'Bearer ' + process.env.DROPBOX_ACCESS_TOKEN,
                 "Content-Type": "application/json"
             }});
-
+            
             return data;
         },
         
@@ -26,23 +30,30 @@ module.exports = {
 
     files: {
         list: async () => {
-            const { data } = await axios.post(constants.dropboxApi + "/file_requests/list", null, { headers: {
-                "Authorization": 'Bearer ' + process.env.DROPBOX_ACCESS_TOKEN,
-                "Content-Type": "application/json"
-            }});
 
-            return data;
+            try {
+                const { result } = await dropbox.filesListFolder({path: ''})  
+                return result;
+            } catch (error) {
+                return error;
+            }
+
         },
 
-        create: async (filename) => {
-            // const { data } = await axios.post(constants.dropboxApi + "/file_requests/create", null, { headers: {
-            //     "Authorization": 'Bearer ' + process.env.DROPBOX_ACCESS_TOKEN,
-            //     "Content-Type": "application/json"
-            // }});
+        upload: async (filename) => {
 
-            // return data;
+            const fileLocation = path.join(__dirname, '../', '/temp',  filename)
+            const file = fs.readFileSync(fileLocation);
 
-            // fs.readFile
+            try {
+                await dropbox.filesUpload({path: '/teste' + filename, contents: file });
+                fs.unlinkSync(fileLocation);
+                return "Upload feito!";
+            } catch (error) {
+                // console.log('não funcionou!', err);
+                return error;
+            }
+
         }
     }
 }

@@ -4,10 +4,22 @@ const DropboxService = require('./dropbox.service');
 
 
 const routes = Router();
-const upload = multer({ dest: 'temp/' })
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'D:/Matheus/Meus Projetos/poc-node-dropbox/temp')
+    },
+    filename: (req, file, cb) => {
+        console.log(file.originalname);
+        cb(null, file.originalname);
+    }
+})
+
+const upload = multer({storage})
 
 
 routes.get('/files/list', async (req, res) => {
+
     try {
         const files = await DropboxService.files.list();
         res.json({files});
@@ -21,19 +33,20 @@ routes.get('/files/list', async (req, res) => {
     }
 })
 
-routes.post('/files/new', upload.single('file'), async (req, res) => {
+routes.post('/files/upload', upload.single('file'), async (req, res) => {
 
     const { filename } = req.body;
+    console.log('filename', filename);
 
     try {
-        const response = await DropboxService.files.create(filename);
+        const response = await DropboxService.files.upload(filename);
         res.json({response});
 
     } catch (error) {
         res.json({
             message: error.message,
             stack: error.stack,
-            data: error.response.data
+            data: error.response?.data
         });
         console.log(error);
     }
